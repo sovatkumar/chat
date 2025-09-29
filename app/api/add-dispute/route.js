@@ -66,3 +66,25 @@ export async function POST(req) {
     return new Response(JSON.stringify({ error: 'Failed to add dispute' }), { status: 500 });
   }
 }
+
+
+export async function GET(req) {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const collection = db.collection('disputes');
+
+    const disputes = await collection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return new Response(JSON.stringify(disputes), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Get Disputes Error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch disputes' }), { status: 500 });
+  }
+}
