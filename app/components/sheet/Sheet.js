@@ -49,7 +49,7 @@ ${data.name}
 
       const lines = doc.splitTextToSize(letter, 170);
       doc.text(lines, 20, 20);
-
+      toast.success("Dispute Letter has been downloaded successfully!");
       doc.save("Dispute_Letter.pdf");
       reset();
     } catch (err) {
