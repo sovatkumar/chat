@@ -201,7 +201,7 @@ ${data.name}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#F2B124] text-white py-2 px-4 rounded-lg hover:bg-[#d9a01f] transition disabled:opacity-50"
+          className="w-full submit-btn bg-[#F2B124] text-white rounded-lg cursor-pointr transition disabled:opacity-50"
         >
           {loading ? "Saving..." : "Generate & Download Letter"}
         </button>
