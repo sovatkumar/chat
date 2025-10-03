@@ -3,28 +3,58 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { toast } from "react-toastify";
-
-
+import jsPDF from "jspdf";
 
 export default function Sheet() {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data) => {
     setLoading(true);
-
     try {
-      const res = await fetch("/api/add-dispute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const doc = new jsPDF();
+      doc.setFont("times", "normal");
+      doc.setFontSize(12);
 
-      if (!res.ok) throw new Error("Failed to add dispute");
-     toast.success("Dispute added successfully!");
+      const letter = `
+Initial Bureau Dispute (FCRA §611)
+
+Name : ${data.name}
+Address : ${data.address}
+City : ${data.city || ""}, State : ${data.state || ""} ZIP : ${data.zip || ""}
+
+Date : ${data.date}
+
+Bureau : ${data.bureau}
+Bureau Address : ${data.BureauAddress}
+
+RE: Dispute of Inaccurate Information under FCRA §611
+
+To Whom It May Concern:
+
+I am disputing the accuracy of the following item(s) on my credit report: ${
+        data.creditor || "[Creditor/Account #]"
+      }. The information is inaccurate because ${
+        data.reason || "[reason]"
+      }. Please investigate and delete or correct within 30 days. I have enclosed copies of supporting documents.
+
+Sincerely,
+${data.name}
+`;
+
+      const lines = doc.splitTextToSize(letter, 170);
+      doc.text(lines, 20, 20);
+
+      doc.save("Dispute_Letter.pdf");
       reset();
     } catch (err) {
       console.error(err);
+      toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -33,92 +63,148 @@ export default function Sheet() {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-2xl">
       <h2 className="text-2xl font-bold mb-6 heading">Add Dispute</h2>
-
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block font-medium">Name</label>
+          <input
+            type="text"
+            {...register("name", { required: "Name is required" })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Enter Your Name"
+          />
+          {errors.name && (
+            <p className="text-red-500 text-sm">{errors.name.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block font-medium">Address</label>
+          <input
+            type="text"
+            {...register("address", { required: "Address is required" })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Enter Your Address"
+          />
+          {errors.address && (
+            <p className="text-red-500 text-sm">{errors.address.message}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block font-medium">City</label>
+            <input
+              type="text"
+              {...register("city", { required: "City is required" })}
+              className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+              placeholder="Enter City"
+            />
+            {errors.city && (
+              <p className="text-red-500 text-sm">{errors.city.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block font-medium">State</label>
+            <input
+              type="text"
+              {...register("state", { required: "State is required" })}
+              className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+              placeholder="ST"
+            />
+            {errors.state && (
+              <p className="text-red-500 text-sm">{errors.state.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block font-medium">ZIP</label>
+            <input
+              type="text"
+              {...register("zip", { required: "ZIP is required" })}
+              className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+              placeholder="ZIP Code"
+            />
+            {errors.zip && (
+              <p className="text-red-500 text-sm">{errors.zip.message}</p>
+            )}
+          </div>
+        </div>
+
         <div>
           <label className="block font-medium">Date</label>
           <input
             type="date"
             {...register("date", { required: "Date is required" })}
-            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:ring-0 focus:border-[#F2B124]"
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
           />
-          {errors.date && <p className="text-red-500 text-sm">{errors.date.message}</p>}
+          {errors.date && (
+            <p className="text-red-500 text-sm">{errors.date.message}</p>
+          )}
         </div>
 
         <div>
-          <label className="block font-medium">Bureau</label>
+          <label className="block font-medium">Bureau Name</label>
           <input
             type="text"
-            {...register("bureau", { required: "Bureau is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-            placeholder="Equifax, Experian, etc."
+            {...register("bureau", { required: "Bureau Name is required" })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Equifax, Experian, TransUnion"
           />
-          {errors.bureau && <p className="text-red-500 text-sm">{errors.bureau.message}</p>}
+          {errors.bureau && (
+            <p className="text-red-500 text-sm">{errors.bureau.message}</p>
+          )}
         </div>
 
         <div>
-          <label className="block font-medium">Account</label>
+          <label className="block font-medium">Bureau Address</label>
           <input
             type="text"
-            {...register("account", { required: "Account is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-            placeholder="Account name/number"
+            {...register("BureauAddress", {
+              required: "Bureau Address is required",
+            })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Enter Bureau Address"
           />
-          {errors.account && <p className="text-red-500 text-sm">{errors.account.message}</p>}
+          {errors.BureauAddress && (
+            <p className="text-red-500 text-sm">
+              {errors.BureauAddress.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="block font-medium">Description</label>
+          <label className="block font-medium">Creditor/Account #</label>
+          <input
+            type="text"
+            {...register("creditor", { required: "Creditor is required" })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Creditor or Account #"
+          />
+          {errors.creditor && (
+            <p className="text-red-500 text-sm">{errors.creditor.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block font-medium">Reason</label>
           <textarea
-            {...register("description", { required: "Description is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-            placeholder="Describe the dispute"
+            {...register("reason", { required: "Reason is required" })}
+            className="w-full border border-[#F2B124] rounded-lg p-2 focus:outline-none focus:border-[#F2B124]"
+            placeholder="Enter reason for dispute"
           />
-          {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
-        </div>
-
-        <div>
-          <label className="block font-medium">Response</label>
-          <input
-            type="text"
-            {...register("response", { required: "Response is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-          />
-          {errors.response && <p className="text-red-500 text-sm">{errors.response.message}</p>}
-        </div>
-
-        <div>
-          <label className="block font-medium">Deadline</label>
-          <input
-            type="date"
-            {...register("deadline", { required: "Deadline is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-          />
-          {errors.deadline && <p className="text-red-500 text-sm">{errors.deadline.message}</p>}
-        </div>
-
-        <div>
-          <label className="block font-medium">Status</label>
-          <select
-            {...register("status", { required: "Status is required" })}
-            className="w-full border rounded-lg p-2 border-[#F2B124] focus:outline-none focus:ring-0 focus:border-[#F2B124]"
-          >
-            <option value="">Select status</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Closed">Closed</option>
-          </select>
-          {errors.status && <p className="text-red-500 text-sm">{errors.status.message}</p>}
+          {errors.reason && (
+            <p className="text-red-500 text-sm">{errors.reason.message}</p>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#F2B124] text-white py-2 px-4 rounded-lg hover:bg-[#F2B124] transition disabled:opacity-50 submit-btn"
+          className="w-full bg-[#F2B124] text-white py-2 px-4 rounded-lg hover:bg-[#d9a01f] transition disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Add Dispute"}
+          {loading ? "Saving..." : "Generate & Download Letter"}
         </button>
-
       </form>
     </div>
   );
